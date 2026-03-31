@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Notes</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f7f1df;
+            color: #2f2a1f;
+        }
+
+        .page {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 40px 20px 64px;
+        }
+
+        .hero {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .hero p {
+            margin: 0 0 10px;
+            font-size: 13px;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: #9a6a13;
+            font-weight: bold;
+        }
+
+        .hero h1 {
+            margin: 0 0 8px;
+            font-size: 40px;
+        }
+
+        .hero span {
+            color: #6e6554;
+            font-size: 15px;
+        }
+
+        .note-form {
+            max-width: 700px;
+            margin: 0 auto 36px;
+            padding: 24px;
+            background: #ffffff;
+            border: 1px solid #ecd8a1;
+            border-radius: 24px;
+            box-shadow: 0 16px 36px rgba(113, 83, 20, 0.09);
+        }
+
+        .note-form form {
+            display: grid;
+            gap: 14px;
+        }
+
+        .note-form input,
+        .note-form textarea {
+            width: 100%;
+            border: 1px solid #e7d9b8;
+            border-radius: 16px;
+            padding: 14px 16px;
+            font-size: 15px;
+            background: #fffaf0;
+        }
+
+        .note-form textarea {
+            min-height: 150px;
+            resize: vertical;
+        }
+
+        .note-form button {
+            justify-self: end;
+            border: none;
+            border-radius: 999px;
+            background: #f2c94c;
+            color: #2f2a1f;
+            padding: 12px 22px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .notes-grid {
+            display: grid;
+            gap: 18px;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        }
+
+        .note-card {
+            background: #fff6c7;
+            border: 1px solid #ecd8a1;
+            border-radius: 22px;
+            padding: 18px;
+            min-height: 180px;
+            box-shadow: 0 12px 24px rgba(113, 83, 20, 0.08);
+        }
+
+        .note-card h2 {
+            margin: 0 0 10px;
+            font-size: 20px;
+        }
+
+        .note-card p {
+            margin: 0;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            color: #4f4636;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 32px;
+            background: #fff;
+            border: 1px dashed #d7c18b;
+            border-radius: 20px;
+            color: #6e6554;
+        }
+    </style>
+</head>
+<body>
+    <main class="page">
+        <section class="hero">
+            <p>Notes</p>
+            <h1>Simple Note Taking App</h1>
+            <span>Add a title and description, then view all saved notes below.</span>
+        </section>
+
+        <section class="note-form">
+            <form action="/notes" method="post">
+                <input
+                    type="text"
+                    name="title"
+                    placeholder="Note title"
+                    required
+                >
+                <textarea
+                    name="desc"
+                    placeholder="Write your note description here..."
+                    required
+                ></textarea>
+                <button type="submit">Add Note</button>
+            </form>
+        </section>
+
+        {% if newDocs %}
+        <section class="notes-grid">
+            {% for doc in newDocs %}
+            <article class="note-card">
+                <h2>{{ doc.title or "Untitled note" }}</h2>
+                <p>{{ doc.note or "No description yet." }}</p>
+            </article>
+            {% endfor %}
+        </section>
+        {% else %}
+        <section class="empty-state">
+            <h2>No notes yet</h2>
+            <p>Your saved notes will appear here after you add one.</p>
+        </section>
+        {% endif %}
+    </main>
+</body>
+</html>
