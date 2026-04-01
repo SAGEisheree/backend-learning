@@ -1,9 +1,9 @@
 def noteEntity(item) -> dict:
     return {
         "id": str(item["_id"]),
-        "title": item["title"],
-        "desc": item["desc"],
-        "important": item["important"]
+        "title": item.get("title", ""),
+        "desc": item.get("desc", ""),
+        "important": item.get("important", False),
     }
 
 def notesEntity(items) -> list:

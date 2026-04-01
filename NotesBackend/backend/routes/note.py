@@ -1,39 +1,25 @@
-from fastapi import APIRouter, Request
-from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
+from fastapi import APIRouter
 from config.db import notes_collection
+from modals.note import Note
+from schemas.note import notesEntity, noteEntity
 
 note = APIRouter()
-templates = Jinja2Templates(directory="templates")
 
 
-@note.get("/", response_class=HTMLResponse)
-async def read_item(request: Request):
-    docs = notes_collection.find({})
-    newDocs = []
+@note.get("/")
+async def read_root():
+    return {"message": "Notes backend is running"}
 
-    for doc in docs:
-        newDocs.append(
-            {
-                "id": str(doc["_id"]),
-                "title": doc.get("title", ""),
-                "desc": doc.get("desc", ""),
-                "important": doc.get("important", False),
-            }
-        )
 
-    return templates.TemplateResponse(
-        request=request,
-        name="index.html",
-        context={"newDocs": newDocs},
-    )
+@note.get("/api/notes")
+async def get_notes():
+    return notesEntity(notes_collection.find({}))
 
- 
-@note.post("/notes")
-async def create_item(request: Request):
-    form = await request.form()
-    note_data = dict(form)
-    note_data["important"] = note_data.get("important") == "on"
-    notes_collection.insert_one(note_data)
-    return {"Success": "Note created successfully"}
+
+@note.post("/api/notes")
+async def create_item(note: Note):
+    note_data = note.model_dump()
+    result = notes_collection.insert_one(note_data)
+    created_note = notes_collection.find_one({"_id": result.inserted_id})
+    return noteEntity(created_note)
     

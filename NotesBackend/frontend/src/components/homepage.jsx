@@ -1,19 +1,39 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 function HomePage() {
   const [noteTitle, setNoteTitle] = useState('')
   const [noteText, setNoteText] = useState('')
   const [isImportant, setIsImportant] = useState(false)
-  const [notes, setNotes] = useState([
-    {
-      id: 1,
-      title: 'Welcome note',
-      content: 'Welcome. Type a note and click Add to save it here.',
-      important: true,
-    },
-  ])
+  const [notes, setNotes] = useState([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [errorMessage, setErrorMessage] = useState('')
 
-  const handleAddNote = () => {
+  const API_BASE_URL =
+    import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8000'
+
+  useEffect(() => {
+    const fetchNotes = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/notes`)
+
+        if (!response.ok) {
+          throw new Error('Unable to load notes right now.')
+        }
+
+        const data = await response.json()
+        setNotes(data)
+        setErrorMessage('')
+      } catch (error) {
+        setErrorMessage(error.message)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchNotes()
+  }, [API_BASE_URL])
+
+  const handleAddNote = async () => {
     const trimmedTitle = noteTitle.trim()
     const trimmedNote = noteText.trim()
 
@@ -21,18 +41,33 @@ function HomePage() {
       return
     }
 
-    setNotes((currentNotes) => [
-      {
-        id: Date.now(),
-        title: trimmedTitle,
-        content: trimmedNote,
-        important: isImportant,
-      },
-      ...currentNotes,
-    ])
-    setNoteTitle('')
-    setNoteText('')
-    setIsImportant(false)
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/notes`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: trimmedTitle,
+          desc: trimmedNote,
+          important: isImportant,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Unable to save the note right now.')
+      }
+
+      const createdNote = await response.json()
+
+      setNotes((currentNotes) => [createdNote, ...currentNotes])
+      setNoteTitle('')
+      setNoteText('')
+      setIsImportant(false)
+      setErrorMessage('')
+    } catch (error) {
+      setErrorMessage(error.message)
+    }
   }
 
   return (
@@ -44,7 +79,7 @@ function HomePage() {
           </p>
           <h1 className="mt-3 text-4xl font-bold">Simple Keep Style Notes</h1>
           <p className="mt-2 text-sm text-slate-600">
-            Write a note, click add, and it appears below.
+            Write a note, save it to FastAPI, and it appears below.
           </p>
         </div>
 
@@ -82,9 +117,20 @@ function HomePage() {
               Add Note
             </button>
           </div>
+
+          {errorMessage && (
+            <p className="mt-4 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-600">
+              {errorMessage}
+            </p>
+          )}
         </section>
 
-        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {isLoading ? (
+          <section className="rounded-3xl border border-amber-200 bg-white p-8 text-center text-sm text-slate-600">
+            Loading notes...
+          </section>
+        ) : (
+          <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {notes.map((note) => (
             <article
               key={note.id}
@@ -105,11 +151,12 @@ function HomePage() {
                 )}
               </div>
               <p className="whitespace-pre-wrap text-sm leading-6 text-slate-700">
-                {note.content}
+                {note.desc}
               </p>
             </article>
           ))}
-        </section>
+          </section>
+        )}
       </div>
     </main>
   )
