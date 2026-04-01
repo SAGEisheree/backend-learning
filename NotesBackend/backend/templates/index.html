@@ -146,6 +146,10 @@
                     placeholder="Write your note description here..."
                     required
                 ></textarea>
+                <label style="display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600; color: #4f4636;">
+                    <input type="checkbox" name="important">
+                    Important
+                </label>
                 <button type="submit">Add Note</button>
             </form>
         </section>
@@ -154,8 +158,15 @@
         <section class="notes-grid">
             {% for doc in newDocs %}
             <article class="note-card">
-                <h2>{{ doc.title or "Untitled note" }}</h2>
-                <p>{{ doc.note or "No description yet." }}</p>
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px;">
+                    <h2 style="margin: 0;">{{ doc.title or "Untitled note" }}</h2>
+                    {% if doc.important %}
+                    <span style="border-radius: 999px; background: #f2c94c; color: #2f2a1f; padding: 6px 10px; font-size: 11px; font-weight: 700; text-transform: uppercase;">
+                        Important
+                    </span>
+                    {% endif %}
+                </div>
+                <p>{{ doc.desc or "No description yet." }}</p>
             </article>
             {% endfor %}
         </section>

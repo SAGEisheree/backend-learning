@@ -1,9 +1,8 @@
-from pydantic import BaseModel, Field
-from typing import Optional 
+from pydantic import BaseModel
 
 class Note(BaseModel):
-    title:str
-    desc:str
-    important: bool
+    title: str
+    desc: str
+    important: bool = False
 
     

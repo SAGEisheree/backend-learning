@@ -3,11 +3,13 @@ import { useState } from 'react'
 function HomePage() {
   const [noteTitle, setNoteTitle] = useState('')
   const [noteText, setNoteText] = useState('')
+  const [isImportant, setIsImportant] = useState(false)
   const [notes, setNotes] = useState([
     {
       id: 1,
       title: 'Welcome note',
       content: 'Welcome. Type a note and click Add to save it here.',
+      important: true,
     },
   ])
 
@@ -24,11 +26,13 @@ function HomePage() {
         id: Date.now(),
         title: trimmedTitle,
         content: trimmedNote,
+        important: isImportant,
       },
       ...currentNotes,
     ])
     setNoteTitle('')
     setNoteText('')
+    setIsImportant(false)
   }
 
   return (
@@ -60,7 +64,16 @@ function HomePage() {
             onChange={(event) => setNoteText(event.target.value)}
           />
 
-          <div className="mt-4 flex justify-end">
+          <div className="mt-4 flex items-center justify-between gap-4">
+            <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+              <input
+                type="checkbox"
+                className="h-4 w-4 rounded border-amber-300 text-amber-500 focus:ring-amber-400"
+                checked={isImportant}
+                onChange={(event) => setIsImportant(event.target.checked)}
+              />
+              Important
+            </label>
             <button
               type="button"
               onClick={handleAddNote}
@@ -75,11 +88,22 @@ function HomePage() {
           {notes.map((note) => (
             <article
               key={note.id}
-              className="min-h-36 rounded-3xl border border-amber-200 bg-[#fff9d8] p-5 shadow-[0_12px_24px_rgba(120,84,0,0.08)]"
+              className={`min-h-36 rounded-3xl border p-5 shadow-[0_12px_24px_rgba(120,84,0,0.08)] ${
+                note.important
+                  ? 'border-amber-400 bg-amber-100'
+                  : 'border-amber-200 bg-[#fff9d8]'
+              }`}
             >
-              <h2 className="mb-2 text-lg font-semibold text-slate-900">
-                {note.title}
-              </h2>
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <h2 className="text-lg font-semibold text-slate-900">
+                  {note.title}
+                </h2>
+                {note.important && (
+                  <span className="rounded-full bg-amber-400 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-900">
+                    Important
+                  </span>
+                )}
+              </div>
               <p className="whitespace-pre-wrap text-sm leading-6 text-slate-700">
                 {note.content}
               </p>
