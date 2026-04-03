@@ -1,3 +1,7 @@
+#formatter for output
+# Frontend → [Modal validates] → FastAPI → MongoDB
+# MongoDB → FastAPI → [Schema formats] → Frontend
+
 def noteEntity(item) -> dict:
     return {
         "id": str(item["_id"]),

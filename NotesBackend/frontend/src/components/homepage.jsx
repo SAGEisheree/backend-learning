@@ -4,6 +4,7 @@ function HomePage() {
   const [noteTitle, setNoteTitle] = useState('')
   const [noteText, setNoteText] = useState('')
   const [isImportant, setIsImportant] = useState(false)
+  const [editingNoteId, setEditingNoteId] = useState(null)
   const [notes, setNotes] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')
@@ -11,6 +12,8 @@ function HomePage() {
   const API_BASE_URL =
     import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8000'
 
+
+    // getting data from backend
   useEffect(() => {
     const fetchNotes = async () => {
       try {
@@ -33,7 +36,28 @@ function HomePage() {
     fetchNotes()
   }, [API_BASE_URL])
 
-  const handleAddNote = async () => {
+  const resetForm = () => {
+    setNoteTitle('')
+    setNoteText('')
+    setIsImportant(false)
+    setEditingNoteId(null)
+  }
+
+  const handleEditClick = (note) => {
+    setEditingNoteId(note.id)
+    setNoteTitle(note.title)
+    setNoteText(note.desc)
+    setIsImportant(note.important)
+    setErrorMessage('')
+  }
+
+  const handleCancelEdit = () => {
+    resetForm()
+    setErrorMessage('')
+  }
+
+  // adding/updating data in backend
+  const handleSaveNote = async () => {
     const trimmedTitle = noteTitle.trim()
     const trimmedNote = noteText.trim()
 
@@ -42,33 +66,72 @@ function HomePage() {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/notes`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          title: trimmedTitle,
-          desc: trimmedNote,
-          important: isImportant,
-        }),
-      })
+      const isEditing = Boolean(editingNoteId)
+      const requestUrl = isEditing
+        ? `${API_BASE_URL}/api/notes/${editingNoteId}`
+        : `${API_BASE_URL}/api/notes`
+
+      const response = await fetch(
+        requestUrl,
+        {
+          method: isEditing ? 'PUT' : 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            title: trimmedTitle,
+            desc: trimmedNote,
+            important: isImportant,
+          }),
+        }
+      )
 
       if (!response.ok) {
-        throw new Error('Unable to save the note right now.')
+        throw new Error(
+          isEditing
+            ? 'Unable to update the note right now.'
+            : 'Unable to save the note right now.'
+        )
       }
 
-      const createdNote = await response.json()
+      const savedNote = await response.json()
 
-      setNotes((currentNotes) => [createdNote, ...currentNotes])
-      setNoteTitle('')
-      setNoteText('')
-      setIsImportant(false)
+      if (isEditing) {
+        setNotes((currentNotes) =>
+          currentNotes.map((note) =>
+            note.id === editingNoteId ? savedNote : note
+          )
+        )
+      } else {
+        setNotes((currentNotes) => [savedNote, ...currentNotes])
+      }
+
+      resetForm()
       setErrorMessage('')
     } catch (error) {
       setErrorMessage(error.message)
     }
   }
+
+  const handleDeleteNote = async (noteId) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/notes/${noteId}`, {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) {
+        throw new Error('Unable to delete the note right now.')
+      }
+
+      setNotes((currentNotes) =>
+        currentNotes.filter((note) => note.id !== noteId)
+      )
+      setErrorMessage('')
+    } catch (error) {
+      setErrorMessage(error.message)
+    }
+  }
+
 
   return (
     <main className="min-h-screen bg-[#f7f3e8] px-4 py-10 text-slate-800">
@@ -106,17 +169,29 @@ function HomePage() {
                 className="h-4 w-4 rounded border-amber-300 text-amber-500 focus:ring-amber-400"
                 checked={isImportant}
                 onChange={(event) => setIsImportant(event.target.checked)}
-              />
+                />
               Important
             </label>
             <button
               type="button"
-              onClick={handleAddNote}
+              onClick={handleSaveNote}
               className="rounded-full bg-amber-400 px-6 py-3 text-sm font-semibold text-slate-900 transition hover:bg-amber-300"
             >
-              Add Note
+              {editingNoteId ? 'Update Note' : 'Add Note'}
             </button>
           </div>
+
+          {editingNoteId && (
+            <div className="mt-3 flex justify-end">
+              <button
+                type="button"
+                onClick={handleCancelEdit}
+                className="rounded-full border border-amber-200 px-5 py-2 text-sm font-medium text-slate-700 transition hover:bg-amber-50"
+              >
+                Cancel Edit
+              </button>
+            </div>
+          )}
 
           {errorMessage && (
             <p className="mt-4 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-600">
@@ -150,9 +225,27 @@ function HomePage() {
                   </span>
                 )}
               </div>
+
               <p className="whitespace-pre-wrap text-sm leading-6 text-slate-700">
                 {note.desc}
               </p>
+
+              <div className="mt-4 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleEditClick(note)}
+                  className="rounded-full border border-amber-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-amber-50"
+                >
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDeleteNote(note.id)}
+                  className="rounded-full border border-red-200 px-4 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50"
+                >
+                  Delete
+                </button>
+              </div>
             </article>
           ))}
           </section>
