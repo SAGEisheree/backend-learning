@@ -15,4 +15,4 @@ conn = MongoClient(
 db = conn.notes
 notes_collection = db.notes
 sticky_notes_collection = db.stickynotes
-
+users_collection = db.users

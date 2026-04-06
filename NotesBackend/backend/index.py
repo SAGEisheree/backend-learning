@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from routes.auth import auth
 from routes.note import note
 from routes.sticky import sticky
 
@@ -13,5 +14,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth)
 app.include_router(note)
 app.include_router(sticky)
