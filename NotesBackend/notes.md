@@ -125,7 +125,7 @@ export default App;
 
 ##  pip install fastapi uvicorn python-dotenv
 
-##   uvicorn app.main:app --reload
+##   uvicorn index:app --reload
 ##
 ##
 ##

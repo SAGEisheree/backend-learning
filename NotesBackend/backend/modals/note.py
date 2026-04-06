@@ -10,6 +10,8 @@ class Note(BaseModel):
     desc: str
     important: bool = False
 
-    
 
+class stickyNote(BaseModel):
+    color: str
+    desc: str
     

@@ -1,11 +1,11 @@
 from fastapi import APIRouter
 from config.db import notes_collection
-from modals.note import Note
+from modals.note import Note, stickyNote
 from schemas.note import notesEntity, noteEntity
 from bson import ObjectId
 
 note = APIRouter()
-
+sticky = APIRouter()
 
 @note.get("/")
 async def read_root():
@@ -43,3 +43,5 @@ async def update_note(id: str, noteSingle: Note):
 
     updated_note = notes_collection.find_one({"_id": ObjectId(id)})
     return noteEntity(updated_note)
+
+

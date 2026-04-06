@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import StickyNotes from './sticky.jsx'
 
 function HomePage() {
   const [noteTitle, setNoteTitle] = useState('')
@@ -138,9 +139,7 @@ function HomePage() {
       <div className="mx-auto max-w-6xl">
         <nav className="mb-8 flex flex-col gap-4 border-4 border-black bg-[#f3d34a] px-5 py-4 text-black shadow-[8px_8px_0_#000] md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.35em]">
-              lets save some words with
-            </p>
+            
             <h1 className="mt-2 text-3xl font-black uppercase md:text-4xl">
               NEO NOTES
             </h1>
@@ -156,34 +155,8 @@ function HomePage() {
           </div>
         </nav>
 
-        <section className="mb-8 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-          <div className="border-4 border-black bg-[#2f3137] p-6 shadow-[8px_8px_0_#000]">
-            <p className="text-sm font-black uppercase tracking-[0.35em] text-[#f3d34a]">
-              Workspace
-            </p>
-            <h2 className="mt-3 max-w-xl text-4xl font-black uppercase leading-tight text-white md:text-5xl">
-              Write fast. Save hard. Keep your messy brain organized.
-            </h2>
-            <p className="mt-4 max-w-2xl text-sm font-medium leading-7 text-[#d7d9df] md:text-base">
-              This notes page now talks directly to FastAPI. Add, edit, delete,
-              and mark notes as important from one dark neobrutalist workspace.
-            </p>
-          </div>
+          <StickyNotes />
 
-          <div className="border-4 border-black bg-[#66d9ef] p-6 text-black shadow-[8px_8px_0_#000]">
-            <p className="text-sm font-black uppercase tracking-[0.3em]">
-              Current Mode
-            </p>
-            <h3 className="mt-3 text-3xl font-black uppercase">
-              {editingNoteId ? 'Editing Note' : 'Creating Note'}
-            </h3>
-            <p className="mt-4 text-sm font-bold leading-7">
-              {editingNoteId
-                ? 'You are editing an existing card. Update the fields and save your changes.'
-                : 'Create a new note with a title, details, and an optional important marker.'}
-            </p>
-          </div>
-        </section>
 
         <section className="mx-auto mb-10 max-w-3xl border-4 border-black bg-[#f6f2e8] p-6 text-black shadow-[10px_10px_0_#000]">
           <input
@@ -289,6 +262,7 @@ function HomePage() {
           ))}
           </section>
         )}
+
       </div>
     </main>
   )
