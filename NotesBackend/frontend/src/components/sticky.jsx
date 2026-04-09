@@ -10,6 +10,21 @@ function StickyNotes() {
   const API_BASE_URL =
     import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8000'
 
+  const getAuthHeaders = (includeJson = false) => {
+    const token = localStorage.getItem('token')
+    const headers = {}
+
+    if (includeJson) {
+      headers['Content-Type'] = 'application/json'
+    }
+
+    if (token) {
+      headers.Authorization = `Bearer ${token}`
+    }
+
+    return headers
+  }
+
   const stickyThemes = {
     yellow: 'bg-[#f3d34a] text-black',
     pink: 'bg-[#ff7ab6] text-black',
@@ -20,7 +35,9 @@ function StickyNotes() {
   useEffect(() => {
     const fetchStickies = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/api/stickynotes`)
+        const response = await fetch(`${API_BASE_URL}/api/stickynotes`, {
+          headers: getAuthHeaders(),
+        })
 
         if (!response.ok) {
           throw new Error('Unable to load sticky notes right now.')
@@ -49,9 +66,7 @@ function StickyNotes() {
     try {
       const response = await fetch(`${API_BASE_URL}/api/stickynotes`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(true),
         body: JSON.stringify({
           color: stickyColor,
           desc: trimmedStickyText,
@@ -76,6 +91,7 @@ function StickyNotes() {
     try {
       const response = await fetch(`${API_BASE_URL}/api/stickynotes/${stickyId}`, {
         method: 'DELETE',
+        headers: getAuthHeaders(),
       })
 
       if (!response.ok) {

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import StickyNotes from './sticky.jsx'
 
-function HomePage() {
+function HomePage({ user, onLogout }) {
   const [noteTitle, setNoteTitle] = useState('')
   const [noteText, setNoteText] = useState('')
   const [isImportant, setIsImportant] = useState(false)
@@ -13,12 +13,28 @@ function HomePage() {
   const API_BASE_URL =
     import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8000'
 
+  const getAuthHeaders = (includeJson = false) => {
+    const token = localStorage.getItem('token')
+    const headers = {}
+
+    if (includeJson) {
+      headers['Content-Type'] = 'application/json'
+    }
+
+    if (token) {
+      headers.Authorization = `Bearer ${token}`
+    }
+
+    return headers
+  }
 
     // getting data from backend
   useEffect(() => {
     const fetchNotes = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/api/notes`)
+        const response = await fetch(`${API_BASE_URL}/api/notes`, {
+          headers: getAuthHeaders(),
+        })
 
         if (!response.ok) {
           throw new Error('Unable to load notes right now.')
@@ -76,9 +92,7 @@ function HomePage() {
         requestUrl,
         {
           method: isEditing ? 'PUT' : 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: getAuthHeaders(true),
           body: JSON.stringify({
             title: trimmedTitle,
             desc: trimmedNote,
@@ -118,6 +132,7 @@ function HomePage() {
     try {
       const response = await fetch(`${API_BASE_URL}/api/notes/${noteId}`, {
         method: 'DELETE',
+        headers: getAuthHeaders(),
       })
 
       if (!response.ok) {
@@ -139,7 +154,9 @@ function HomePage() {
       <div className="mx-auto max-w-6xl">
         <nav className="mb-8 flex flex-col gap-4 border-4 border-black bg-[#f3d34a] px-5 py-4 text-black shadow-[8px_8px_0_#000] md:flex-row md:items-center md:justify-between">
           <div>
-            
+            <p className="text-xs font-black uppercase tracking-[0.35em]">
+              Signed in as {user.email}
+            </p>
             <h1 className="mt-2 text-3xl font-black uppercase md:text-4xl">
               NEO NOTES
             </h1>
@@ -152,6 +169,13 @@ function HomePage() {
             <div className="border-4 border-black bg-[#ff8a5b] px-4 py-2">
               Important: {notes.filter((note) => note.important).length}
             </div>
+            <button
+              type="button"
+              onClick={onLogout}
+              className="border-4 border-black bg-[#ff6b6b] px-4 py-2 text-black shadow-[4px_4px_0_#000] transition hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none"
+            >
+              Logout
+            </button>
           </div>
         </nav>
 

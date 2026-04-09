@@ -697,6 +697,19 @@ After completing these steps, your backend will be able to:
 6. protect private routes
 
 
+## Step 9: Implement token verification
+
+Also in `config/auth.py`, create logic to:
+
+1. receive JWT token
+2. decode it using `SECRET_KEY`
+3. verify it is valid
+4. extract user id
+5. find that user in MongoDB
+
+This logic will be used for protected routes.
+
+
 ## Step 10: Create auth routes
 
 File to create or complete:
@@ -708,39 +721,6 @@ This file should contain:
 1. `POST /auth/signup`
 2. `POST /auth/login`
 3. `GET /auth/me`
-
-### What this file should import
-
-Your `routes/auth.py` should import:
-
-```python
-from fastapi import APIRouter, Depends, HTTPException, status
-
-from config.auth import create_access_token, get_current_user, hash_password, verify_password
-from config.db import users_collection
-from modals.user import UserLogin, UserSignup
-from schemas.user import userEntity
-```
-
-### Router setup
-
-Create the router like this:
-
-```python
-auth = APIRouter(prefix="/auth", tags=["auth"])
-```
-
-### Why use `prefix="/auth"`
-
-This keeps authentication routes grouped together.
-
-So:
-
-- signup becomes `/auth/signup`
-- login becomes `/auth/login`
-- current user becomes `/auth/me`
-
-This makes the API easier to understand and maintain.
 
 
 ## Step 11: Build signup route
@@ -759,67 +739,6 @@ What it should do:
 4. if not, hash the password
 5. save the new user in MongoDB
 6. return safe user info
-
-### Example route
-
-```python
-@auth.post("/signup")
-async def signup(user: UserSignup):
-    existing_user = users_collection.find_one({"email": user.email})
-
-    if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered",
-        )
-
-    user_data = {
-        "email": user.email,
-        "password": hash_password(user.password),
-    }
-
-    result = users_collection.insert_one(user_data)
-    created_user = users_collection.find_one({"_id": result.inserted_id})
-
-    return {
-        "message": "User created successfully",
-        "user": userEntity(created_user),
-    }
-```
-
-### Step-by-step explanation
-
-#### `user: UserSignup`
-
-FastAPI validates incoming request body using `UserSignup`.
-
-That means:
-
-- email must be valid
-- password must exist
-
-#### `find_one({"email": user.email})`
-
-Checks whether this email already exists.
-
-If yes:
-
-- do not create duplicate account
-- return `400 Bad Request`
-
-#### `hash_password(user.password)`
-
-Converts raw password into a secure hash.
-
-#### `insert_one(user_data)`
-
-Stores user in MongoDB.
-
-#### `userEntity(created_user)`
-
-Formats user response safely.
-
-This ensures the password is not returned to frontend.
 
 ### MongoDB user document should look like:
 
@@ -857,70 +776,6 @@ What it should do:
 5. if password is correct, create JWT token
 6. return token and user info
 
-### Example route
-
-```python
-@auth.post("/login")
-async def login(user: UserLogin):
-    existing_user = users_collection.find_one({"email": user.email})
-
-    if not existing_user or not verify_password(user.password, existing_user["password"]):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email or password",
-        )
-
-    access_token = create_access_token(
-        {
-            "sub": str(existing_user["_id"]),
-            "email": existing_user["email"],
-        }
-    )
-
-    return {
-        "access_token": access_token,
-        "token_type": "bearer",
-        "user": userEntity(existing_user),
-    }
-```
-
-### Step-by-step explanation
-
-#### `find_one({"email": user.email})`
-
-Looks up user by email.
-
-If no user is found:
-
-- login fails
-
-#### `verify_password(...)`
-
-Checks whether entered password matches stored hash.
-
-If it does not match:
-
-- backend returns `401 Unauthorized`
-
-#### `create_access_token(...)`
-
-Creates a JWT token using:
-
-- user id
-- user email
-
-That token becomes the proof that the user is logged in.
-
-#### Returned response
-
-Backend sends:
-
-- `access_token`
-- `token_type`
-- safe user data
-
-Frontend will store this token and use it in future requests.
-
 Example login response:
 
 ```json
@@ -949,56 +804,6 @@ What it should do:
 2. decode token
 3. find current user in database
 4. return safe user info
-
-### Example route
-
-```python
-@auth.get("/me")
-async def get_me(current_user: dict = Depends(get_current_user)):
-    return {"user": userEntity(current_user)}
-```
-
-### Step-by-step explanation
-
-#### `Depends(get_current_user)`
-
-This tells FastAPI:
-
-- read bearer token from request
-- decode token
-- verify token
-- find matching user in MongoDB
-- pass that user into the route
-
-If token is invalid:
-
-- request fails with `401 Unauthorized`
-
-If token is valid:
-
-- route returns current logged-in user
-
-### Why `/auth/me` is useful
-
-This route helps the frontend restore login after page refresh.
-
-Example flow:
-
-1. frontend reads token from `localStorage`
-2. frontend calls `/auth/me`
-3. if token is valid, user stays logged in
-4. if token is invalid, frontend logs user out
-
-### Example response
-
-```json
-{
-  "user": {
-    "id": "mongo_user_id",
-    "email": "user@example.com"
-  }
-}
-```
 
 ### Why this route matters
 
@@ -1190,6 +995,95 @@ localStorage.removeItem("token")
 
 This is simple and works for learning projects.
 
+### What should happen after login
+
+When frontend receives the backend login response:
+
+```json
+{
+  "access_token": "jwt_token_here",
+  "token_type": "bearer",
+  "user": {
+    "id": "mongo_user_id",
+    "email": "user@example.com"
+  }
+}
+```
+
+store the token like this:
+
+```javascript
+localStorage.setItem("token", data.access_token)
+```
+
+### Why `localStorage` is used here
+
+This is the easiest beginner-friendly way to keep a user logged in after refresh.
+
+So if the page reloads:
+
+- token is still available
+- frontend can still send it to backend
+- backend can still identify the user
+
+### Where you should read the token
+
+Whenever you need to call a protected route, read it like this:
+
+```javascript
+const token = localStorage.getItem("token")
+```
+
+### Better pattern used in your frontend
+
+Instead of repeating token logic everywhere, create a small helper inside the component:
+
+```javascript
+const getAuthHeaders = (includeJson = false) => {
+  const token = localStorage.getItem('token')
+  const headers = {}
+
+  if (includeJson) {
+    headers['Content-Type'] = 'application/json'
+  }
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`
+  }
+
+  return headers
+}
+```
+
+### Why this helper is useful
+
+It avoids repeating:
+
+- token lookup
+- content type logic
+- authorization header logic
+
+in every fetch request.
+
+### Logout behavior
+
+When user logs out:
+
+```javascript
+localStorage.removeItem("token")
+```
+
+After that:
+
+- protected routes will stop working
+- frontend should redirect user to login page
+
+### Important note
+
+`localStorage` is okay for learning projects.
+
+For more security in bigger apps, people often use cookies instead.
+
 
 ## Step 21: Send token with frontend fetch requests
 
@@ -1227,6 +1121,126 @@ Do this for:
 - update note
 - delete note
 - sticky note routes too
+
+### What the authorization header means
+
+When frontend sends:
+
+```http
+Authorization: Bearer <token>
+```
+
+the backend reads that token using:
+
+```python
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+```
+
+and then:
+
+```python
+current_user: dict = Depends(get_current_user)
+```
+
+So this header is what allows the backend to know who the user is.
+
+### How you now use it in `homepage.jsx`
+
+For loading notes:
+
+```javascript
+const response = await fetch(`${API_BASE_URL}/api/notes`, {
+  headers: getAuthHeaders(),
+})
+```
+
+For creating or updating notes:
+
+```javascript
+const response = await fetch(requestUrl, {
+  method: isEditing ? 'PUT' : 'POST',
+  headers: getAuthHeaders(true),
+  body: JSON.stringify({
+    title: trimmedTitle,
+    desc: trimmedNote,
+    important: isImportant,
+  }),
+})
+```
+
+For deleting notes:
+
+```javascript
+const response = await fetch(`${API_BASE_URL}/api/notes/${noteId}`, {
+  method: 'DELETE',
+  headers: getAuthHeaders(),
+})
+```
+
+### How you should use it in `sticky.jsx`
+
+For loading sticky notes:
+
+```javascript
+const response = await fetch(`${API_BASE_URL}/api/stickynotes`, {
+  headers: getAuthHeaders(),
+})
+```
+
+For creating sticky notes:
+
+```javascript
+const response = await fetch(`${API_BASE_URL}/api/stickynotes`, {
+  method: 'POST',
+  headers: getAuthHeaders(true),
+  body: JSON.stringify({
+    color: stickyColor,
+    desc: trimmedStickyText,
+  }),
+})
+```
+
+For deleting sticky notes:
+
+```javascript
+const response = await fetch(`${API_BASE_URL}/api/stickynotes/${stickyId}`, {
+  method: 'DELETE',
+  headers: getAuthHeaders(),
+})
+```
+
+### Why the backend needs this on every request
+
+The backend does not “remember” the user automatically.
+
+Each protected request must carry proof of login.
+
+That proof is the JWT token.
+
+So every protected request must send the token again.
+
+### What happens if token is missing
+
+If the frontend does not send the token:
+
+- backend will fail in `get_current_user`
+- FastAPI will return `401 Unauthorized`
+
+### What happens if token is invalid or expired
+
+If token is wrong or expired:
+
+- backend cannot verify it
+- backend returns `401 Unauthorized`
+
+### Practical result of steps 20 and 21
+
+After doing these two steps:
+
+1. frontend remembers the login token
+2. frontend sends token with note and sticky requests
+3. backend can identify the logged-in user
+4. backend can return only that user’s data
 
 
 ## Step 22: Add frontend auth state
