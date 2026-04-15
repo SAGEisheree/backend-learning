@@ -1,4 +1,5 @@
-## Assignment 1 
-Task 1: Perform Basic Mathematical Operations
-Task 2: Create a Personalized Greeting
- 
+## In the NotesBackend folder, U can find learning_notes folder which explains about the FastAPI practical usage.
+
+![alt text](image.png)
+
+### Learning FastAPI by doing all these projects.
